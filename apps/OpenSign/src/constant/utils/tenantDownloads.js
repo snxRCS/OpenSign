@@ -43,13 +43,21 @@ export const getAppLogo = async () => {
   }
 };
 
-export const getTenantDetails = async (objectId, contactId) => {
+export const getTenantDetails = async (
+  objectId,
+  contactId,
+  excludeCounts = false
+) => {
   try {
     const url = `${localStorage.getItem("baseUrl")}functions/gettenant`;
     const parseAppId = localStorage.getItem("parseAppId");
     const accesstoken = localStorage.getItem("accesstoken");
     const token = { "X-Parse-Session-Token": accesstoken };
-    const data = { userId: objectId, contactId: contactId };
+    const data = {
+      userId: objectId,
+      contactId: contactId,
+      excludeCounts: excludeCounts
+    };
     const res = await axios.post(url, data, {
       headers: {
         "Content-Type": "application/json",
@@ -121,7 +129,7 @@ export const convertPdfArrayBuffer = async (url) => {
   }
 };
 
-export const handleSendOTP = async (email) => {
+export const handleSendOTP = async (email, { throwOnError = false } = {}) => {
   try {
     let url = `${localStorage.getItem("baseUrl")}functions/SendOTPMailV1`;
     const headers = {
@@ -131,8 +139,12 @@ export const handleSendOTP = async (email) => {
     const body = {
       email: email
     };
-    await axios.post(url, body, { headers: headers });
+    const response = await axios.post(url, body, { headers: headers });
+    if (response.data?.result !== "Otp send") {
+      throw new Error(i18n.t("something-went-wrong-mssg"));
+    }
   } catch (error) {
+    if (throwOnError) throw error;
     alert(error.message);
   }
 };

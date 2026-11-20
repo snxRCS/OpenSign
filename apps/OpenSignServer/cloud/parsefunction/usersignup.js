@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { cloudServerUrl, serverAppId } from '../../Utils.js';
 import { logger } from '../../utils/logger.js';
+import { isPendingContactBookUser } from './ContactBookSignupOtp.js';
 const serverUrl = cloudServerUrl; //process.env.SERVER_URL;
 const APPID = serverAppId;
 const masterKEY = process.env.MASTER_KEY;
@@ -21,7 +22,7 @@ async function saveUser(userDetails) {
     const url = `${serverUrl}/loginAs`;
     const axiosRes = await axios({
       method: 'POST',
-      url: url,
+      url,
       headers: {
         'Content-Type': 'application/json;charset=utf-8',
         'X-Parse-Application-Id': APPID,
@@ -53,6 +54,29 @@ async function saveUser(userDetails) {
 }
 export default async function usersignup(request) {
   const userDetails = request.params.userDetails;
+  const email = userDetails?.email?.toLowerCase()?.replace(/\s/g, '');
+  let contactBookUser = request.user;
+  if (!contactBookUser && email) {
+    const userQuery = new Parse.Query(Parse.User);
+    userQuery.equalTo('email', email);
+    contactBookUser = await userQuery.first({ useMasterKey: true });
+  }
+  const isContactBookSignup = contactBookUser && (await isPendingContactBookUser(contactBookUser));
+  if (isContactBookSignup) {
+    const verifiedAt = request.user?.get('contactBookSignupOtpVerifiedAt');
+    if (
+      !request.user ||
+      request.user.id !== contactBookUser.id ||
+      !verifiedAt ||
+      Date.now() - new Date(verifiedAt).getTime() > 15 * 60 * 1000 ||
+      request.user.get('email') !== email
+    ) {
+      throw new Parse.Error(
+        Parse.Error.OPERATION_FORBIDDEN,
+        'Verify your email before completing registration.'
+      );
+    }
+  }
 
   try {
     const user = await saveUser(userDetails);

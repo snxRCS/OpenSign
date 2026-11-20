@@ -1666,9 +1666,7 @@ const TemplatePlaceholder = () => {
             } else {
               return {
                 ...position,
-                ...(position.type === textWidget
-                  ? { Height: textHeight }
-                  : {}),
+                ...(position.type === textWidget ? { Height: textHeight } : {}),
                 options: {
                   ...position.options,
                   name: defaultdata.name,

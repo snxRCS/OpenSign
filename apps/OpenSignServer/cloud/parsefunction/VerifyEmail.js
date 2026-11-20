@@ -1,13 +1,16 @@
 export default async function VerifyEmail(request) {
   try {
-    if (!request?.user) {
+    const jwttoken = request?.headers?.jwttoken;
+    let user = request?.user;
+
+    if (!user) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'User is not authenticated.');
     } else {
       let otpN = request.params.otp;
       let otp = parseInt(otpN);
-      let email = (request.params.email || '').toLowerCase().trim();
-      if (!email) {
-        email = request?.user?.get('email');
+      let email = (request.params.email || user.get('email') || '').toLowerCase().trim();
+      if (jwttoken && email !== (user.get('email') || '').toLowerCase().trim()) {
+        throw new Parse.Error(Parse.Error.INVALID_PARAMETER, 'Invalid email.');
       }
 
       //checking otp is correct or not which already save in defaultdata_Otp class
@@ -24,13 +27,11 @@ export default async function VerifyEmail(request) {
 
       // Fetch the user by their objectId
       const userQuery = new Parse.Query(Parse.User);
-      const user = await userQuery.get(request?.user.id, {
-        sessionToken: request?.user.getSessionToken(),
-      });
+      const userObj = await userQuery.get(user.id, { useMasterKey: true });
 
-      const currentEmail = (user?.get('email') || '').toLowerCase().trim();
+      const currentEmail = (userObj?.get('email') || '').toLowerCase().trim();
       const changingEmail = Boolean(email) && email !== currentEmail;
-      const isEmailVerified = request?.user?.get('emailVerified');
+      const isEmailVerified = userObj?.get('emailVerified');
 
       if (isEmailVerified && !changingEmail) {
         return { message: 'Email is already verified.' };
@@ -43,7 +44,7 @@ export default async function VerifyEmail(request) {
         extQuery.equalTo('UserId', {
           __type: 'Pointer',
           className: '_User',
-          objectId: user.id,
+          objectId: userObj.id,
         });
         const extUser = await extQuery.first({ useMasterKey: true });
         if (extUser) {
@@ -52,14 +53,14 @@ export default async function VerifyEmail(request) {
           await extUser.save(null, { useMasterKey: true });
         }
         // The account address is the login name, so it has to move with it.
-        user.set('username', email);
-        user.set('email', email);
-        user.set('normalizedEmail', email);
+        userObj.set('username', email);
+        userObj.set('email', email);
+        userObj.set('normalizedEmail', email);
       }
       // Update the emailVerified field to true
-      user.set('emailVerified', true);
+      userObj.set('emailVerified', true);
       // Save the user object
-      const saved = await user.save(null, { useMasterKey: true });
+      const saved = await userObj.save(null, { useMasterKey: true });
       if (!saved) {
         const error = new Error('Something went wrong, please try again later!');
         error.code = 400; // Set the error code (e.g., 400 for bad request)

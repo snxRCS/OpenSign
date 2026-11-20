@@ -155,16 +155,18 @@ export const sendEmailToSigners = async (
           data = {
             RequestBody: customizeMail?.body,
             RequestSubject: customizeMail.subject,
-            SendMail: true
+            SendMail: true,
+            IsSendMail: true
           };
         } else if (defaultMail?.body && defaultMail?.subject) {
           data = {
             RequestBody: defaultMail?.body,
             RequestSubject: defaultMail?.subject,
-            SendMail: true
+            SendMail: true,
+            IsSendMail: true
           };
         } else {
-          data = { SendMail: true };
+          data = { SendMail: true, IsSendMail: true };
         }
         const docUrl = `${localStorage.getItem("baseUrl")}classes/contracts_Document`;
         await axios.put(`${docUrl}/${pdfDetails[0]?.objectId}`, data, {

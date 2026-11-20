@@ -1,5 +1,6 @@
 import { logger } from '../../utils/logger.js';
-async function getTenantByUserId(userId, contactId) {
+
+async function getTenantByUserId(userId, contactId, excludeCounts = false) {
   try {
     if (contactId) {
       const contactquery = new Parse.Query('contracts_Contactbook');
@@ -10,7 +11,10 @@ async function getTenantByUserId(userId, contactId) {
         if (tenantId) {
           const tenantCreditsQuery = new Parse.Query('partners_Tenant');
           tenantCreditsQuery.equalTo('objectId', tenantId);
-          tenantCreditsQuery.exclude('FileAdapters,PfxFile,ContactNumber');
+          tenantCreditsQuery.exclude('FileAdapters,PfxFile,ContactNumber,SmtpConfig');
+          if (excludeCounts) {
+            tenantCreditsQuery.exclude('DocumentCount,TemplateCount');
+          }
           const res = await tenantCreditsQuery.first({ useMasterKey: true });
           return res;
         } else {
@@ -36,7 +40,10 @@ async function getTenantByUserId(userId, contactId) {
             objectId: user,
           });
         }
-        tenantQuery.exclude('FileAdapters,PfxFile');
+        tenantQuery.exclude('FileAdapters,PfxFile,SmtpConfig');
+        if (excludeCounts) {
+          tenantQuery.exclude('DocumentCount,TemplateCount');
+        }
         const res = await tenantQuery.first({ useMasterKey: true });
         return res;
       } else {
@@ -48,12 +55,14 @@ async function getTenantByUserId(userId, contactId) {
     return 'user does not exist!';
   }
 }
+
 export default async function getTenant(request) {
   const userId = request.params.userId || '';
   const contactId = request.params.contactId || '';
+  const excludeCounts = request.params.excludeCounts === true;
 
   if (userId || contactId) {
-    return await getTenantByUserId(userId, contactId);
+    return await getTenantByUserId(userId, contactId, excludeCounts);
   } else {
     return {};
   }

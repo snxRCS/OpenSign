@@ -70,6 +70,7 @@ const Forms = (props) => {
     TimeToCompleteDays: DEFAULT_COMPLETION_DAYS,
     SendinOrder: "false",
     SendInOrderStrict: "false",
+    IsSendMail: false,
     password: "",
     file: "",
     remindOnceInEvery: 5,
@@ -133,6 +134,7 @@ const Forms = (props) => {
           ...obj,
           NotifyOnSignatures: true,
           SendinOrder: sendinorder,
+          IsSendMail: false,
           IsTourEnabled: istourenabled,
         }));
     } finally {
@@ -545,6 +547,9 @@ const Forms = (props) => {
             object.set("SenderMail", senderMail);
           }
         }
+        if (props.title === "Request Signatures") {
+          object.set("IsSendMail", formData?.IsSendMail === true);
+        }
         const savedObject =
           props.title === "New Template"
             ? await object.save()
@@ -571,6 +576,7 @@ const Forms = (props) => {
                 : "Please review and sign this document",
             TimeToCompleteDays: DEFAULT_COMPLETION_DAYS,
             SendinOrder: sendinorder,
+            IsSendMail: false,
             password: "",
             file: "",
             NotifyOnSignatures: notifySign,
@@ -677,6 +683,7 @@ const Forms = (props) => {
       IsEnableOTP: "false",
       IsTourEnabled: istourenabled,
       NotifyOnSignatures: notifySign,
+      IsSendMail: false,
       RedirectUrl: "",
       AllowModifications: false,
     };

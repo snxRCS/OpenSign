@@ -5,6 +5,7 @@ import {
   clearResponse, drawWidget, isEmptyValue, nextPendingWidget
 } from "../../constant/Utils";
 import { setIsShowModal, setLastIndex, setPrefillImg } from "../../redux/reducers/widgetSlice";
+import { getRegexForType } from "../../utils";
 
 /** Build the required-field, validation, and signer navigation callbacks. */
 export function useModalActions(context) {
@@ -119,6 +120,12 @@ export function useModalActions(context) {
         break;
       case "ssn":
         regexValidation = /^(?!000|666|9\d{2})\d{3}-(?!00)\d{2}-(?!0000)\d{4}$/;
+        validateExpression(regexValidation);
+        break;
+      case "letters-only":
+      case "ein":
+      case "url":
+        regexValidation = RegexParser(getRegexForType(validateType));
         validateExpression(regexValidation);
         break;
       default:

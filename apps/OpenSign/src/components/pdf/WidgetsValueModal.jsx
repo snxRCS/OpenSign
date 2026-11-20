@@ -42,8 +42,7 @@ import {
 } from "../../redux/reducers/widgetSlice";
 import { useDispatch, useSelector } from "react-redux";
 import Loader from "../../primitives/Loader";
-import {
-} from "../../utils";
+
 
 const fontOptions = [
   { value: "Fasthand" },

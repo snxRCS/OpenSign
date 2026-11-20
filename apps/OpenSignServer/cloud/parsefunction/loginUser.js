@@ -1,6 +1,7 @@
 import { logger } from '../../utils/logger.js';
 import { getLdapConfig } from '../../utils/ldapConfig.js';
 import { authenticateLdap } from '../../utils/ldapAuth.js';
+import { isPendingContactBookUser, sendContactBookSignupOtp } from './ContactBookSignupOtp.js';
 
 function normalizeEmail(email) {
   return String(email || '')
@@ -129,8 +130,17 @@ export default async function loginUser(request) {
 
         const loginIdentifier = parseUser.get('username') || email;
         const loggedInUser = await Parse.User.logIn(loginIdentifier, password);
+        const _loggedIn = loggedInUser.toJSON();
+        if (await isPendingContactBookUser(loggedInUser)) {
+          await sendContactBookSignupOtp({ user: loggedInUser });
+          return {
+            ..._loggedIn,
+            contactBookSignupPending: true,
+            sessionToken: loggedInUser.getSessionToken(),
+          };
+        }
         return {
-          ...loggedInUser.toJSON(),
+          ..._loggedIn,
         };
       }
     } catch (ldapErr) {
@@ -145,8 +155,17 @@ export default async function loginUser(request) {
   try {
     const user = await Parse.User.logIn(username, password);
     if (user) {
+      const _user = user?.toJSON();
+      if (await isPendingContactBookUser(user)) {
+        await sendContactBookSignupOtp({ user });
+        return {
+          ..._user,
+          contactBookSignupPending: true,
+          sessionToken: user.getSessionToken(),
+        };
+      }
       return {
-        ...user.toJSON(),
+        ..._user,
       };
     } else {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'user not found.');
